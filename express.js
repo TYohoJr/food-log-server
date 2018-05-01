@@ -54,58 +54,101 @@ app.get("/", (req, res) => {
 })
 
 
-// app.post('/signUpData', (req, res) => {
-//     if (req.body.username.length && req.body.password.length) {
-//         db.collection('users').find({ username: req.body.username }).toArray((err, dataMatch) => {
-//             if (!dataMatch.length) {
-//                 bcrypt.hash(req.body.password, saltRounds, function (err, hash) {
-//                     db.collection('users').save({ username: req.body.username, password: hash, work: req.body.work }, (err, result) => {
-//                         if (err) {
-//                             res.json("Failed")
-//                             return console.log(err);
-//                         } else {
-//                             res.json("Sign Up Successful")
-//                             console.log('saved to database');
-//                         }
-//                     });
-//                 });
-//             } else {
-//                 res.json('This username already exists')
-//             }
-//         })
-//     } else {
-//         res.json(`Error: username or password can't be blank`)
-//     }
-// });
+app.post('/userSignUp', (req, res) => {
+    console.log("test");
+    client.query(`select * from users where username = '${req.body.userDetails.username}'`, (err, duplicateResult) => {
+        if (err) {
+            console.error(err);
+            res.json({
+                message: `Sign Up Failed: ${err}`
+            });
+        } else if (duplicateResult.rows[0]) {
+            res.json({
+                message: "Username already exists"
+            })
+        } else {
+            // If no duplicate then save user details to DB
+            bcrypt.hash(req.body.userDetails.password, saltRounds, function (err, hash) {
+                client.query(`insert into users (username, password) values ('${req.body.userDetails.username}', '${hash}') returning *`, (err, result) => {
+                    if (err) {
+                        console.error(err);
+                        res.json({
+                            message: `Sign Up failed: ${err}`
+                        });
+                    } else {
+                        // If no error return success message to the front end
+                        let user = result.rows[0]
+                        res.json({
+                            message: `You have successfully signed up!`
+                        })
+                    }
+                });
+            })
+        }
+    });
+});
 
 
-// app.post("/signInData", (req, res) => {
-//     db.collection("users").find({ username: req.body.username }).toArray((err, user) => {
-//         if (!user.length) {
-//             res.json({
-//                 message: "Username/Password doesn't match"
-//             });
-//         } else if (err) {
-//             res.json({
-//                 message: err
-//             });
-//         } else {
-//             bcrypt.compare(req.body.password, user[0].password, function (err, resolve) {
-//                 if (resolve === true) {
-//                     var token = jwt.sign(req.body.username, ('Secret'), {
-//                     });
-//                     console.log(`user: "${req.body.username}" has logged in at ${new Date()}`)
-//                     res.json({
-//                         message: "Login successful!",
-//                         myToken: token
-//                     });
-//                 } else if (resolve === false) {
-//                     console.log(`user: "${req.body.username}" has failed a login in at ${new Date()}`)
-//                     res.json({
-//                         message: "Username/Password doesn't match",
-//                     })
-//                 }
-//             });
-//         }
-//     })
-// });
+app.post("/userLogIn", (req, res) => {
+    client.query(`select * from users where username = '${req.body.userDetails.username}'`, (err, duplicateResult) => {
+        if (duplicateResult.rowCount === 0) {
+            res.json({
+                message: "Username/Password don't match"
+            });
+        } else if (err) {
+            res.json({
+                message: err
+            });
+        } else {
+            bcrypt.compare(req.body.userDetails.password, duplicateResult.rows[0].password, function (err, resolve) {
+                if (resolve === true) {
+                    var token = jwt.sign(req.body.userDetails.username, ('Secret'), {
+                    });
+                    console.log(`user: "${req.body.userDetails.username}" has logged in at ${new Date()}`)
+                    res.json({
+                        message: "Login successful!",
+                        myToken: token
+                    });
+                } else if (resolve === false) {
+                    console.log(`user: "${req.body.userDetails.username}" has failed a login in at ${new Date()}`)
+                    res.json({
+                        message: "Username/Password don't match",
+                    })
+                }
+            });
+        }
+    })
+});
+
+
+
+app.post("/userSignIn", (req, res) => {
+    db.collection("users").find({ username: req.body.username }).toArray((err, user) => {
+        if (!user.length) {
+            res.json({
+                message: "Username/Password doesn't match"
+            });
+        } else if (err) {
+            res.json({
+                message: err
+            });
+        } else {
+            // bcrypt.compare(req.body.password, user[0].password, function (err, resolve) {
+            //     if (resolve === true) {
+            //         var token = jwt.sign(req.body.username, ('Secret'), {
+            //         });
+            //         console.log(`user: "${req.body.username}" has logged in at ${new Date()}`)
+            //         res.json({
+            //             message: "Login successful!",
+            //             myToken: token
+            //         });
+            //     } else if (resolve === false) {
+            //         console.log(`user: "${req.body.username}" has failed a login in at ${new Date()}`)
+            //         res.json({
+            //             message: "Username/Password doesn't match",
+            //         })
+            //     }
+            // });
+        }
+    })
+});
