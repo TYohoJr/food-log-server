@@ -30,7 +30,10 @@ function verifyToken(req, res, next) {
             }
         })
     } else {
-        res.send("No token")
+        res.json({
+            noToken: true,
+            message: "Please Log In"
+        })
     }
 }
 
@@ -64,6 +67,7 @@ app.post('/userSignUp', (req, res) => {
             });
         } else if (duplicateResult.rows[0]) {
             res.json({
+                duplicateCheck: true,
                 message: "Username already exists"
             })
         } else {
@@ -106,7 +110,7 @@ app.post("/userLogIn", (req, res) => {
                     });
                     console.log(`user: "${req.body.userDetails.username}" has logged in at ${new Date()}`)
                     res.json({
-                        message: "Login successful!",
+                        message: "You have successfully logged in!",
                         myToken: token
                     });
                 } else if (resolve === false) {
@@ -120,35 +124,9 @@ app.post("/userLogIn", (req, res) => {
     })
 });
 
-
-
-app.post("/userSignIn", (req, res) => {
-    db.collection("users").find({ username: req.body.username }).toArray((err, user) => {
-        if (!user.length) {
-            res.json({
-                message: "Username/Password doesn't match"
-            });
-        } else if (err) {
-            res.json({
-                message: err
-            });
-        } else {
-            // bcrypt.compare(req.body.password, user[0].password, function (err, resolve) {
-            //     if (resolve === true) {
-            //         var token = jwt.sign(req.body.username, ('Secret'), {
-            //         });
-            //         console.log(`user: "${req.body.username}" has logged in at ${new Date()}`)
-            //         res.json({
-            //             message: "Login successful!",
-            //             myToken: token
-            //         });
-            //     } else if (resolve === false) {
-            //         console.log(`user: "${req.body.username}" has failed a login in at ${new Date()}`)
-            //         res.json({
-            //             message: "Username/Password doesn't match",
-            //         })
-            //     }
-            // });
-        }
+app.post("/searchAPI", verifyToken, (req, res)=>{
+    console.log("API Search Function Ran");
+    res.json({
+        message:"hello"
     })
-});
+})
